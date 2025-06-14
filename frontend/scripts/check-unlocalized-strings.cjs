@@ -150,7 +150,7 @@ function isCommonDevelopmentString(str) {
     /^#[0-9a-fA-F]{3,8}$/, // Color codes
     /^[a-zA-Z0-9_-]+=[a-zA-Z0-9_-]+$/, // Key-value pairs
     /^mm:ss$/, // Time format
-    /^[a-zA-Z0-9]+\/[a-zA-Z0-9-]+$/, // Provider/model format
+    /^[a-zA-Z0-9]+\/[a-zA-Z0-9._-]+$/, // Provider/model format
     /^\?[a-zA-Z0-9_-]+$/, // URL parameters
     /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i, // UUID
     /^[A-Za-z0-9+/=]+$/, // Base64
@@ -177,7 +177,7 @@ function isCommonDevelopmentString(str) {
 
   // AI model and provider patterns
   const aiRelatedPattern =
-    /^(AI|OpenAI|VertexAI|PaLM|Gemini|Anthropic|Anyscale|Databricks|Ollama|FriendliAI|Groq|DeepInfra|AI21|Replicate|OpenRouter|Azure|AWS|SageMaker|Bedrock|Mistral|Perplexity|Fireworks|Cloudflare|Workers|Voyage|claude-|gpt-|o1-|o3-)/i;
+    /^(AI|OpenAI|VertexAI|PaLM|Gemini|Anthropic|Anyscale|Databricks|Ollama|FriendliAI|Groq|DeepInfra|AI21|Replicate|OpenRouter|Azure|AWS|SageMaker|Bedrock|Mistral|Perplexity|Fireworks|Cloudflare|Workers|Voyage|claude-|gpt-|o1-|o3-|o4-|meta\/|microsoft\/|deepseek\/|xai\/|cohere\/|ai21-labs\/|mistral-ai\/)/i;
   if (aiRelatedPattern.test(str)) {
     return true;
   }

@@ -23,6 +23,7 @@ export const MAP_PROVIDER = {
   replicate: "Replicate",
   voyage: "Voyage AI",
   openrouter: "OpenRouter",
+  github: "GitHub Models",
 };
 
 export const mapProvider = (provider: string) =>

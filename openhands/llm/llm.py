@@ -32,6 +32,7 @@ from openhands.llm.fn_call_converter import (
     convert_fncall_messages_to_non_fncall_messages,
     convert_non_fncall_messages_to_fncall_messages,
 )
+from openhands.llm.github_models import get_rate_limit_handler
 from openhands.llm.metrics import Metrics
 from openhands.llm.retry_mixin import RetryMixin
 
@@ -177,15 +178,27 @@ class LLM(RetryMixin, DebugMixin):
             kwargs['max_tokens'] = self.config.max_output_tokens
             kwargs.pop('max_completion_tokens')
 
+        # Configure GitHub models if needed
+        model = self.config.model
+        base_url = self.config.base_url
+        custom_llm_provider = self.config.custom_llm_provider
+
+        if model.startswith('github/'):
+            # Configure for GitHub models
+            if not base_url:
+                base_url = 'https://models.github.ai/v1'
+            if not custom_llm_provider:
+                custom_llm_provider = 'github'
+
         self._completion = partial(
             litellm_completion,
-            model=self.config.model,
+            model=model,
             api_key=self.config.api_key.get_secret_value()
             if self.config.api_key
             else None,
-            base_url=self.config.base_url,
+            base_url=base_url,
             api_version=self.config.api_version,
-            custom_llm_provider=self.config.custom_llm_provider,
+            custom_llm_provider=custom_llm_provider,
             timeout=self.config.timeout,
             top_p=self.config.top_p,
             drop_params=self.config.drop_params,
@@ -278,8 +291,83 @@ class LLM(RetryMixin, DebugMixin):
 
             # Record start time for latency measurement
             start_time = time.time()
-            # we don't support streaming here, thus we get a ModelResponse
-            resp: ModelResponse = self._completion_unwrapped(*args, **kwargs)
+
+            # GitHub models fallback logic
+            current_model = self.config.model
+            resp: ModelResponse | None = None
+
+            # Try the primary model first
+            try:
+                resp = self._completion_unwrapped(*args, **kwargs)
+            except RateLimitError as e:
+                # Handle GitHub models rate limiting with automatic fallback
+                if current_model.startswith('github/') and self.config.api_key:
+                    logger.warning(
+                        f'Rate limit hit for {current_model}, attempting fallback'
+                    )
+                    try:
+                        rate_handler = get_rate_limit_handler(
+                            self.config.api_key.get_secret_value()
+                        )
+                        rate_handler.mark_model_failed(current_model)
+
+                        # Try fallback models
+                        fallback_model = rate_handler.get_next_available_model(
+                            current_model
+                        )
+                        if fallback_model:
+                            logger.info(
+                                f'Switching to fallback model: {fallback_model}'
+                            )
+                            # Create a new completion function with the fallback model
+                            fallback_kwargs = kwargs.copy()
+                            fallback_kwargs['model'] = fallback_model
+
+                            # Update the partial function temporarily
+                            original_completion = self._completion_unwrapped
+
+                            # Configure fallback model for GitHub
+                            fallback_base_url = 'https://models.github.ai/v1'
+                            fallback_custom_provider = 'github'
+
+                            self._completion_unwrapped = partial(
+                                litellm_completion,
+                                model=fallback_model,
+                                api_key=self.config.api_key.get_secret_value(),
+                                base_url=fallback_base_url,
+                                api_version=self.config.api_version,
+                                custom_llm_provider=fallback_custom_provider,
+                                timeout=self.config.timeout,
+                                top_p=self.config.top_p,
+                                drop_params=self.config.drop_params,
+                                seed=self.config.seed,
+                                temperature=self.config.temperature,
+                                max_completion_tokens=self.config.max_output_tokens,
+                            )
+
+                            try:
+                                resp = self._completion_unwrapped(
+                                    *args, **fallback_kwargs
+                                )
+                                logger.info(
+                                    f'Successfully used fallback model: {fallback_model}'
+                                )
+                            finally:
+                                # Restore original completion function
+                                self._completion_unwrapped = original_completion
+                        else:
+                            logger.error(
+                                'No fallback models available, re-raising rate limit error'
+                            )
+                            raise e
+                    except Exception as fallback_error:
+                        logger.error(f'Fallback failed: {fallback_error}')
+                        raise e
+                else:
+                    raise e
+
+            if resp is None:
+                raise LLMNoResponseError('Failed to get response from LLM')
 
             # Calculate and record latency
             latency = time.time() - start_time
