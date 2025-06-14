@@ -4,11 +4,13 @@ OpenHands now supports GitHub Models as an LLM provider, offering access to a wi
 
 ## Features
 
-- **Wide Model Selection**: Access to 50+ models from OpenAI, Meta, Microsoft, Mistral, DeepSeek, xAI, and more
+- **Wide Model Selection**: Access to 59+ models from OpenAI, Meta, Microsoft, Mistral, DeepSeek, AI21 Labs, Cohere, and more
 - **Automatic Fallback**: When a model hits its rate limit, OpenHands automatically switches to another available model in the same tier
 - **Rate Limit Management**: Intelligent handling of different rate limit tiers (low, high, custom, embeddings)
 - **Single API Key**: Use one GitHub token to access all available models
 - **Cost Optimization**: Automatic switching to available models helps optimize costs and availability
+- **Smart UI Integration**: GitHub models are automatically detected and displayed in the model selector with fallback information
+- **Real-time Rate Limit Detection**: Advanced error detection and automatic model switching without user intervention
 
 ## Available Models
 

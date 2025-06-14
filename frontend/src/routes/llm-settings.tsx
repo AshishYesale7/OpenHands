@@ -23,6 +23,7 @@ import { isCustomModel } from "#/utils/is-custom-model";
 import { LlmSettingsInputsSkeleton } from "#/components/features/settings/llm-settings/llm-settings-inputs-skeleton";
 import { KeyStatusIcon } from "#/components/features/settings/key-status-icon";
 import { DEFAULT_SETTINGS } from "#/services/settings";
+import { GitHubModelsInfo } from "#/components/features/settings/github-models-info";
 
 function LlmSettingsScreen() {
   const { t } = useTranslation();
@@ -261,13 +262,17 @@ function LlmSettingsScreen() {
               className="flex flex-col gap-6"
             >
               {!isLoading && !isFetching && (
-                <ModelSelector
-                  models={modelsAndProviders}
-                  currentModel={
-                    settings.LLM_MODEL || "anthropic/claude-3-5-sonnet-20241022"
-                  }
-                  onChange={handleModelIsDirty}
-                />
+                <>
+                  <ModelSelector
+                    models={modelsAndProviders}
+                    currentModel={
+                      settings.LLM_MODEL ||
+                      "anthropic/claude-3-5-sonnet-20241022"
+                    }
+                    onChange={handleModelIsDirty}
+                  />
+                  <GitHubModelsInfo selectedModel={settings.LLM_MODEL} />
+                </>
               )}
 
               <SettingsInput

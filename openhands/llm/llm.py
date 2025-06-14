@@ -33,6 +33,7 @@ from openhands.llm.fn_call_converter import (
     convert_non_fncall_messages_to_fncall_messages,
 )
 from openhands.llm.github_models import get_rate_limit_handler
+from openhands.llm.litellm_github_config import get_github_model_config
 from openhands.llm.metrics import Metrics
 from openhands.llm.retry_mixin import RetryMixin
 
@@ -184,11 +185,12 @@ class LLM(RetryMixin, DebugMixin):
         custom_llm_provider = self.config.custom_llm_provider
 
         if model.startswith('github/'):
-            # Configure for GitHub models
+            # Configure for GitHub models using the configuration
+            github_config = get_github_model_config(model)
             if not base_url:
-                base_url = 'https://models.github.ai/v1'
+                base_url = github_config.get('api_base', 'https://models.github.ai/v1')
             if not custom_llm_provider:
-                custom_llm_provider = 'github'
+                custom_llm_provider = github_config.get('custom_llm_provider', 'github')
 
         self._completion = partial(
             litellm_completion,
