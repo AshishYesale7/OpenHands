@@ -23,6 +23,7 @@ import { isCustomModel } from "#/utils/is-custom-model";
 import { LlmSettingsInputsSkeleton } from "#/components/features/settings/llm-settings/llm-settings-inputs-skeleton";
 import { KeyStatusIcon } from "#/components/features/settings/key-status-icon";
 import { DEFAULT_SETTINGS } from "#/services/settings";
+import { GitHubModelsInfo } from "#/components/features/settings/github-models-info";
 
 function LlmSettingsScreen() {
   const { t } = useTranslation();
@@ -329,6 +330,8 @@ function LlmSettingsScreen() {
                 linkText={t(I18nKey.SETTINGS$SEARCH_API_KEY_INSTRUCTIONS)}
                 href="https://tavily.com/"
               />
+
+              <GitHubModelsInfo />
             </div>
           )}
 

@@ -288,7 +288,46 @@ class LLM(RetryMixin, DebugMixin):
             # Record start time for latency measurement
             start_time = time.time()
             # we don't support streaming here, thus we get a ModelResponse
-            resp: ModelResponse = self._completion_unwrapped(*args, **kwargs)
+            try:
+                resp: ModelResponse = self._completion_unwrapped(*args, **kwargs)
+            except Exception as e:
+                # GitHub Models fallback logic for rate limit errors
+                if self.config.model.startswith('github/'):
+                    try:
+                        from litellm.exceptions import RateLimitError
+
+                        from openhands.llm.github_models import get_rate_limit_handler
+
+                        # Check if this is a rate limit error
+                        if isinstance(e, RateLimitError) and self.config.api_key:
+                            rate_limit_handler = get_rate_limit_handler(
+                                self.config.api_key.get_secret_value()
+                            )
+                            rate_limit_handler.mark_model_failed(self.config.model)
+                            fallback_model = (
+                                rate_limit_handler.get_next_available_model(
+                                    self.config.model
+                                )
+                            )
+                            if fallback_model:
+                                logger.info(
+                                    f'Rate limit hit for {self.config.model}, switching to {fallback_model}'
+                                )
+                                # Update the model in kwargs and retry
+                                kwargs['model'] = fallback_model
+                                resp = self._completion_unwrapped(*args, **kwargs)
+                            else:
+                                raise e  # No fallback available, re-raise original error
+                        else:
+                            raise e  # Not a rate limit error, re-raise
+                    except ImportError:
+                        logger.debug('GitHub Models fallback not available')
+                        raise e  # Re-raise original error if GitHub models not available
+                else:
+                    raise e  # Not a GitHub model, re-raise original error
+            else:
+                # No exception occurred, continue normally
+                pass
 
             # Calculate and record latency
             latency = time.time() - start_time
