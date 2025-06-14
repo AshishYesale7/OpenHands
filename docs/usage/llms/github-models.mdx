@@ -1,0 +1,288 @@
+# GitHub Models Integration
+
+OpenHands now supports GitHub Models, providing access to 59+ AI models from multiple providers through a single GitHub API key with intelligent automatic fallback capabilities.
+
+## Overview
+
+GitHub Models offers access to a diverse collection of AI models from leading providers including:
+- **OpenAI**: GPT-4.1, GPT-4o, o1, o3 series
+- **Meta**: Llama 3.3 70B, Llama 3.2 Vision
+- **Microsoft**: Phi-4, MAI-DS-R1
+- **Mistral AI**: Mistral Large, Small
+- **DeepSeek**: DeepSeek V3
+- **AI21 Labs**: Jamba 1.5 Large
+- **Cohere**: Command R+
+- And 42+ additional models
+
+## Key Features
+
+### 🔄 Automatic Fallback System
+- **Rate Limit Detection**: Automatically detects when a model hits its rate limit
+- **Intelligent Switching**: Switches to alternative models in the same tier
+- **Zero Downtime**: Ensures uninterrupted workflows
+- **Auto Recovery**: Re-enables original models after cooldown period
+
+### 📊 Rate Limit Tiers
+Models are organized into tiers based on their rate limits:
+- **High Tier** (14 models): Production-ready with generous limits
+- **Low Tier** (30 models): Development and testing
+- **Custom Tier** (11 models): Specialized reasoning models
+- **Embeddings** (4 models): Text embedding models
+
+### 🛡️ Security & Best Practices
+- Secure token storage via environment variables
+- Intelligent API usage respecting rate limits
+- Comprehensive error handling and logging
+
+## Setup Instructions
+
+### Prerequisites
+1. **GitHub Account**: You need a GitHub account
+2. **GitHub Token**: Generate a personal access token with appropriate permissions
+3. **Docker** (for containerized deployment)
+
+### Getting a GitHub Token
+1. Go to [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
+2. Click "Generate new token (classic)"
+3. Select appropriate scopes (typically `repo` and `read:org`)
+4. Copy the generated token (starts with `ghp_`)
+
+### Environment Configuration
+
+#### Option 1: Environment Variables
+```bash
+export LLM_MODEL="github/openai/gpt-4.1"
+export LLM_API_KEY="your-github-token"
+export LLM_BASE_URL="https://models.github.ai/v1"
+```
+
+#### Option 2: Docker Environment
+```bash
+docker run -it --rm --pull=always \
+    -e LLM_MODEL="github/openai/gpt-4.1" \
+    -e LLM_API_KEY="your-github-token" \
+    -e LLM_BASE_URL="https://models.github.ai/v1" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -p 3000:3000 \
+    --name openhands-app \
+    docker.all-hands.dev/all-hands-ai/openhands:latest
+```
+
+### Mac M1 Docker Setup
+
+For Mac M1 users, use the following optimized setup:
+
+```bash
+# Pull the latest image
+docker pull docker.all-hands.dev/all-hands-ai/openhands:latest
+
+# Run with Mac M1 optimizations
+docker run -it --rm --pull=always \
+    --platform linux/amd64 \
+    -e LLM_MODEL="github/openai/gpt-4.1" \
+    -e LLM_API_KEY="your-github-token" \
+    -e LLM_BASE_URL="https://models.github.ai/v1" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -p 3000:3000 \
+    --name openhands-app \
+    docker.all-hands.dev/all-hands-ai/openhands:latest
+```
+
+## Model Selection Guide
+
+### High Tier Models (Production Ready)
+Best for production workloads with generous rate limits:
+- `github/openai/gpt-4.1` - Latest GPT-4 model
+- `github/openai/gpt-4o` - Optimized GPT-4
+- `github/meta/llama-3.3-70b-instruct` - Meta's latest large model
+- `github/mistral-ai/mistral-large-2411` - Mistral's flagship model
+
+### Low Tier Models (Development)
+Suitable for development and testing:
+- `github/openai/gpt-4o-mini` - Lightweight GPT-4
+- `github/microsoft/phi-4` - Microsoft's efficient model
+- `github/mistral-ai/mistral-small-2412` - Compact Mistral model
+
+### Custom Tier Models (Specialized)
+For specialized reasoning tasks:
+- `github/openai/o1` - Advanced reasoning model
+- `github/openai/o3-mini` - Compact reasoning model
+- `github/deepseek/deepseek-v3-0324` - DeepSeek's reasoning model
+
+## Usage Examples
+
+### Basic Configuration
+```python
+from openhands.core.config import LLMConfig
+
+config = LLMConfig(
+    model="github/openai/gpt-4.1",
+    api_key="your-github-token",
+    base_url="https://models.github.ai/v1"
+)
+```
+
+### With Automatic Fallback
+```python
+# Primary model with automatic fallback
+config = LLMConfig(
+    model="github/openai/gpt-4.1",  # Will fallback to other high-tier models
+    api_key="your-github-token",
+    base_url="https://models.github.ai/v1"
+)
+```
+
+### Fallback Flow Example
+```
+User selects: github/openai/gpt-4.1 (high tier)
+Rate limit hit → Auto-switch to: github/meta/llama-3.3-70b-instruct
+Rate limit hit → Auto-switch to: github/mistral-ai/mistral-large-2411
+Rate limit hit → Auto-switch to: github/deepseek/deepseek-v3-0324
+Original model re-enabled after 5 minutes
+```
+
+## Available Models
+
+### OpenAI Models (8 models)
+- `github/openai/gpt-4.1` (High Tier)
+- `github/openai/gpt-4o` (High Tier)
+- `github/openai/gpt-4o-mini` (Low Tier)
+- `github/openai/o1` (Custom Tier)
+- `github/openai/o1-mini` (Custom Tier)
+- `github/openai/o3-mini` (Custom Tier)
+- `github/openai/text-embedding-3-small` (Embeddings)
+- `github/openai/text-embedding-3-large` (Embeddings)
+
+### Meta Models (2 models)
+- `github/meta/llama-3.3-70b-instruct` (High Tier)
+- `github/meta/llama-3.2-11b-vision-instruct` (Low Tier)
+
+### Microsoft Models (2 models)
+- `github/microsoft/phi-4` (Low Tier)
+- `github/microsoft/mai-ds-r1` (Custom Tier)
+
+### Mistral AI Models (2 models)
+- `github/mistral-ai/mistral-large-2411` (High Tier)
+- `github/mistral-ai/mistral-small-2412` (Low Tier)
+
+### Other Providers
+- `github/deepseek/deepseek-v3-0324` (Custom Tier)
+- `github/ai21labs/jamba-1-5-large` (High Tier)
+- `github/cohere/command-r-plus` (High Tier)
+- And 42+ additional models
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Authentication Errors
+```
+Error: 401 Unauthorized
+```
+**Solution**: Verify your GitHub token has the correct permissions and hasn't expired.
+
+#### 2. Rate Limit Errors
+```
+Error: 429 Too Many Requests
+```
+**Solution**: The automatic fallback system should handle this. If not, try a different tier model.
+
+#### 3. Model Not Found
+```
+Error: Model not found
+```
+**Solution**: Check the model name format. It should be `github/provider/model-name`.
+
+#### 4. Docker Issues on Mac M1
+```
+Error: Platform mismatch
+```
+**Solution**: Use `--platform linux/amd64` flag in Docker run command.
+
+### Debug Mode
+Enable debug logging to troubleshoot issues:
+```bash
+export OPENHANDS_LOG_LEVEL=DEBUG
+```
+
+### Checking Model Availability
+Test if GitHub Models are accessible:
+```python
+from openhands.llm.github_models import GitHubModelsProvider
+
+provider = GitHubModelsProvider()
+models = provider.get_available_models()
+print(f"Available models: {len(models)}")
+```
+
+## Performance Optimization
+
+### Model Selection Strategy
+1. **Start with High Tier**: Use high-tier models for production
+2. **Fallback Awareness**: Let the system handle rate limits automatically
+3. **Task-Specific Models**: Use custom tier for reasoning tasks
+4. **Cost Optimization**: Use low-tier models for development
+
+### Rate Limit Management
+- The system automatically manages rate limits
+- Fallback models are selected from the same tier when possible
+- Original models are re-enabled after a 5-minute cooldown
+- No manual intervention required
+
+## Security Considerations
+
+### Token Security
+- Store tokens in environment variables only
+- Never commit tokens to version control
+- Use minimal required permissions
+- Rotate tokens regularly
+
+### API Usage
+- Respect rate limits (handled automatically)
+- Monitor usage through GitHub's interface
+- Use appropriate models for your use case
+
+## Advanced Configuration
+
+### Custom Fallback Order
+While the system automatically selects fallback models, you can influence the selection by understanding the tier system:
+
+```python
+# High tier models (best fallback options)
+high_tier_models = [
+    "github/openai/gpt-4.1",
+    "github/meta/llama-3.3-70b-instruct",
+    "github/mistral-ai/mistral-large-2411",
+    "github/ai21labs/jamba-1-5-large",
+    "github/cohere/command-r-plus"
+]
+```
+
+### Integration with Existing Workflows
+GitHub Models integrates seamlessly with existing OpenHands configurations:
+
+```yaml
+# config.yaml
+llm:
+  model: "github/openai/gpt-4.1"
+  api_key: "${GITHUB_TOKEN}"
+  base_url: "https://models.github.ai/v1"
+```
+
+## Support and Resources
+
+### Documentation
+- [GitHub Models Marketplace](https://github.com/marketplace?type=models)
+- [OpenHands LLM Configuration](https://docs.all-hands.dev/usage/llms)
+- [Docker Setup Guide](https://docs.all-hands.dev/usage/local-setup)
+
+### Community
+- [OpenHands GitHub Repository](https://github.com/All-Hands-AI/OpenHands)
+- [Discord Community](https://discord.gg/ESHStjSjD4)
+- [GitHub Discussions](https://github.com/All-Hands-AI/OpenHands/discussions)
+
+## Conclusion
+
+GitHub Models integration brings unprecedented flexibility and reliability to OpenHands, providing access to 59+ AI models with intelligent fallback capabilities. The automatic rate limit handling ensures uninterrupted workflows while the diverse model selection allows for optimal task-specific performance.
+
+This integration represents a significant advancement in OpenHands' LLM capabilities, making it easier than ever to leverage cutting-edge AI models for software development tasks.

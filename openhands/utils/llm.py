@@ -38,6 +38,24 @@ def get_supported_llm_models(config: OpenHandsConfig) -> list[str]:
             llm_config.aws_secret_access_key.get_secret_value(),
         )
     model_list = litellm_model_list_without_bedrock + bedrock_model_list
+
+    # Add GitHub Models support
+    try:
+        from openhands.llm.github_models import get_github_models_for_litellm
+
+        # Try to get GitHub models if API key is available
+        github_token = None
+        for llm_config in config.llms.values():
+            if llm_config.api_key and llm_config.model.startswith('github/'):
+                github_token = llm_config.api_key.get_secret_value()
+                break
+
+        if github_token:
+            github_models = get_github_models_for_litellm(github_token)
+            model_list.extend(github_models)
+    except Exception as e:
+        logger.debug(f'GitHub Models not available: {e}')
+
     for llm_config in config.llms.values():
         ollama_base_url = llm_config.ollama_base_url
         if llm_config.model.startswith('ollama'):
